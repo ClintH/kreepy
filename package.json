@@ -1,0 +1,15 @@
+{
+  "name": "kreepy",
+  "version": "0.0.1",
+  "description": "Simple crawler which converts to Markdown",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "crawler",
+    "spider"
+  ],
+  "author": "Clint Heyer",
+  "license": "MIT"
+}
