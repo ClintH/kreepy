@@ -4,8 +4,8 @@ var 	moment 	= require("moment"),
 // --- CONFIGURATION ---
 var config = {}
 
-// Base URL. Crawler will not crawl URLs that don't share this base.
-config.baseUrl = "http://wiki/";
+// Base URL
+config.baseUrl = "http://.../";
 
 // Start suffix from baseUrl or an empty string to start at baseUrl
 config.startUrl = ""; 
@@ -14,13 +14,21 @@ config.auth = {
 	user: "****",
 	password: "****"
 }
+
+// Destination path
 config.outputPath = "output/";
 
+// If true, saves images and PDFs it encounters
+config.saveBinaries = true;
+
+// Only want to crawl links within a certain DIV id, and any IMG tag
+config.linkSelector = "#wikitext a, img";
+
 // Set to non-zero to limit the number of URLs to process. Useful for testing.
-config.maxUrlsToProcess = 1000; 
+config.maxUrlsToProcess = 5; 
 
 // How many URLs to process at once
-config.concurrency = 5;
+config.concurrency = 1;
 
 // --- END CONFIG ---
 
@@ -39,14 +47,21 @@ engine.urlPreprocess = function(url) {
 	return url;
 }
 
+
 // Conversion of URLs to filesystem paths, used when transforming content
-engine.urlToFile = function(url) {
+// Note: contentType is only available when we are about to save a binary file
+engine.processUrlForFile = function(url, contentType, relativeTo) {
 	if (url.indexOf(config.baseUrl) == 0) {
 		url = url.replace(config.baseUrl, '');
-		url = url.replace("index.php?n=", "");
-		url = url.replace(".", "/");
-		if (url.length == 0) url = "index";
-		url += ".md";
+		if (url.indexOf("uploads/") == 0) {
+			// Handle wiki uploads differently, keeping their extension
+			url = url.substr(8);	
+		} else {
+			url = url.replace("index.php?n=", "");
+			url = url.replace(".", "/");
+			if (url.length == 0) url = "index";
+			url += ".md";			
+		}
 	}
 	return url;
 }
@@ -57,6 +72,7 @@ engine.urlClassify = function(url) {
 	if (url.indexOf("Site.") > 0) return 0;
 	if (url.indexOf("PmWiki.") > 0) return 0;
 	if (url.indexOf(".RecentChanges") > 0) return 0;
+	if (url.indexOf("Category.") > 0) return 0;
 	if (url.indexOf(config.baseUrl) < 0) return 0; // Ignore off-site
 
 	// Just follow links
@@ -79,6 +95,10 @@ engine.extractMeta = function($doc) {
 	meta.updated = $doc("#blogfoot .lastmod").text().replace("Page last modified on ", "");
 	meta.updated = moment(meta.updated, "MMMM D, YYYY, at h:mm").format();
 	return meta;
+}
+
+engine.domToContent = function($doc) {
+	return $doc("#wikitext").html(); 
 }
 
 // Apply processing to HTML as a DOM
@@ -105,6 +125,5 @@ engine.processHtml = function(html) {
 
 // Start crawler and listen for completion (note 'err' param will always be null)
 engine.start(function(err, results) {
-	console.log("All done. " + results.processed + " URL(s) processed.");
 
 })
